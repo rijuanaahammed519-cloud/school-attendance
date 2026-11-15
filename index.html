@@ -1,56 +1,103 @@
 
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>School Attendance</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>School Attendance System</title>
+
 <style>
 body {
- font-family: Arial;
- background:#edf4f1;
- padding:15px;
+  font-family: Arial, sans-serif;
+  background: #eef4f1;
+  margin: 0;
+  padding: 15px;
 }
+
 header {
- background:#075e45;
- color:white;
- text-align:center;
- padding:20px;
- border-radius:12px;
+  background: #075e45;
+  color: white;
+  text-align: center;
+  padding: 20px 10px;
+  border-radius: 12px;
 }
+
 .card {
- background:white;
- padding:15px;
- margin-top:15px;
- border-radius:10px;
+  background: white;
+  padding: 15px;
+  margin-top: 15px;
+  border-radius: 10px;
 }
+
 input {
- padding:10px;
- width:90%;
- margin:7px 0;
+  padding: 11px;
+  width: 90%;
+  margin: 6px 0;
+  border: 1px solid #ccc;
+  border-radius: 6px;
 }
+
 button {
- padding:10px;
- border:0;
- border-radius:6px;
- color:white;
- margin:4px;
+  padding: 9px 12px;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  margin: 3px;
 }
-.add {background:#075e45;}
-.yes {background:green;}
-.no {background:#d22;}
-.student {
- padding:12px 0;
- border-bottom:1px solid #ddd;
+
+.add { background: #075e45; }
+.present { background: green; }
+.absent { background: #d62828; }
+
+.table-box {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+th {
+  background: #075e45;
+  color: white;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 12px 8px;
+  text-align: center;
+}
+
+tr:nth-child(even) {
+  background: #f0f7f3;
+}
+
+.summary {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+
+.summary h2 {
+  color: #075e45;
+}
+
+footer {
+  text-align: center;
+  margin-top: 25px;
 }
 </style>
 </head>
+
 <body>
 
 <header>
 <h2>Rajshahi Cantonment</h2>
 <h3>Public School & College</h3>
-<p>Student Attendance System</p>
+<p>STUDENT ATTENDANCE MANAGEMENT</p>
 </header>
 
 <div class="card">
@@ -59,95 +106,218 @@ button {
 </div>
 
 <div class="card">
-<h3>Add Student</h3>
+<h3>Add New Student</h3>
+
+<input id="roll" placeholder="Roll Number">
 <input id="name" placeholder="Student Name">
-<button class="add" onclick="addStudent()">Add Student</button>
+<input id="className" placeholder="Class">
+<input id="section" placeholder="Section">
+
+<button class="add" onclick="addStudent()">
++ Add Student
+</button>
 </div>
 
 <div class="card">
 <h3>Attendance Summary</h3>
-<p>Total: <span id="total">0</span></p>
-<p>Present: <span id="present">0</span></p>
-<p>Absent: <span id="absent">0</span></p>
+
+<div class="summary">
+<div>
+<h2 id="total">0</h2>
+Total
+</div>
+
+<div>
+<h2 id="pCount">0</h2>
+Present
+</div>
+
+<div>
+<h2 id="aCount">0</h2>
+Absent
+</div>
+</div>
 </div>
 
 <div class="card">
-<h3>Student List</h3>
-<div id="list"></div>
-<button class="add" onclick="save()">Save Attendance</button>
+<h3>Student Attendance Table</h3>
+
+<div class="table-box">
+<table>
+<thead>
+<tr>
+<th>Roll</th>
+<th>Name</th>
+<th>Class</th>
+<th>Section</th>
+<th>Status</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="studentTable"></tbody>
+</table>
 </div>
 
+<br>
+
+<button class="add" onclick="saveAttendance()">
+Save Attendance
+</button>
+
+</div>
+
+<footer>
+<p>© 2026 Rajshahi Cantonment Public School & College</p>
+</footer>
+
 <script>
-let students=JSON.parse(localStorage.students||"[]");
-let records=JSON.parse(localStorage.records||"{}");
-let date=document.getElementById("date");
 
-date.value=new Date().toLocaleDateString("en-CA");
-let attendance=records[date.value]||{};
+let students = JSON.parse(
+ localStorage.getItem("schoolStudents") || "[]"
+);
 
-function addStudent(){
- let n=document.getElementById("name").value.trim();
- if(!n)return alert("Enter student name");
- students.push(n);
- localStorage.students=JSON.stringify(students);
- document.getElementById("name").value="";
- show();
+let records = JSON.parse(
+ localStorage.getItem("schoolRecords") || "{}"
+);
+
+let dateInput = document.getElementById("date");
+
+function today() {
+ let d = new Date();
+ let offset = d.getTimezoneOffset();
+ return new Date(d.getTime() - offset * 60000)
+ .toISOString().slice(0,10);
 }
 
-function mark(i,s){
- attendance[i]=s;
- show();
-}
+dateInput.value = today();
 
-function show(){
- let list=document.getElementById("list");
- list.innerHTML="";
- let p=0,a=0;
+let attendance = records[dateInput.value] || {};
 
- students.forEach((n,i)=>{
- let s=attendance[i]||"Not marked";
- if(s==="Present")p++;
- if(s==="Absent")a++;
+function addStudent() {
 
- let div=document.createElement("div");
- div.className="student";
- let name=document.createElement("b");
- name.textContent=(i+1)+". "+n+" — "+s;
- div.appendChild(name);
- div.appendChild(document.createElement("br"));
+ let roll = document.getElementById("roll").value.trim();
+ let name = document.getElementById("name").value.trim();
+ let cls = document.getElementById("className").value.trim();
+ let section = document.getElementById("section").value.trim();
 
- let b=document.createElement("button");
- b.className="yes";
- b.textContent="Present";
- b.onclick=()=>mark(i,"Present");
+ if (!roll || !name) {
+   alert("Roll and Name are required!");
+   return;
+ }
 
- let c=document.createElement("button");
- c.className="no";
- c.textContent="Absent";
- c.onclick=()=>mark(i,"Absent");
+ if (students.some(s => s.roll === roll)) {
+   alert("This roll number already exists!");
+   return;
+ }
 
- div.appendChild(b);
- div.appendChild(c);
- list.appendChild(div);
+ students.push({
+   roll: roll,
+   name: name,
+   cls: cls,
+   section: section
  });
 
- document.getElementById("total").textContent=students.length;
- document.getElementById("present").textContent=p;
- document.getElementById("absent").textContent=a;
+ localStorage.setItem(
+   "schoolStudents",
+   JSON.stringify(students)
+ );
+
+ document.getElementById("roll").value = "";
+ document.getElementById("name").value = "";
+ document.getElementById("className").value = "";
+ document.getElementById("section").value = "";
+
+ showTable();
 }
 
-function save(){
- records[date.value]=attendance;
- localStorage.records=JSON.stringify(records);
- alert("Attendance Saved!");
+function mark(index, status) {
+ attendance[index] = status;
+ showTable();
 }
 
-date.onchange=()=>{
- attendance=records[date.value]||{};
- show();
-};
+function showTable() {
 
-show();
+ let table = document.getElementById("studentTable");
+ table.innerHTML = "";
+
+ let present = 0;
+ let absent = 0;
+
+ students.forEach((student, index) => {
+
+ let status = attendance[index] || "Not Marked";
+
+ if (status === "Present") present++;
+ if (status === "Absent") absent++;
+
+ let tr = document.createElement("tr");
+
+ [
+   student.roll,
+   student.name,
+   student.cls,
+   student.section,
+   status
+ ].forEach(value => {
+   let td = document.createElement("td");
+   td.textContent = value;
+   tr.appendChild(td);
+ });
+
+ let action = document.createElement("td");
+
+ let p = document.createElement("button");
+ p.className = "present";
+ p.textContent = "Present";
+ p.onclick = () => mark(index, "Present");
+
+ let a = document.createElement("button");
+ a.className = "absent";
+ a.textContent = "Absent";
+ a.onclick = () => mark(index, "Absent");
+
+ action.appendChild(p);
+ action.appendChild(a);
+ tr.appendChild(action);
+
+ table.appendChild(tr);
+
+ });
+
+ document.getElementById("total").textContent =
+ students.length;
+
+ document.getElementById("pCount").textContent =
+ present;
+
+ document.getElementById("aCount").textContent =
+ absent;
+}
+
+function saveAttendance() {
+
+ records[dateInput.value] = attendance;
+
+ localStorage.setItem(
+   "schoolRecords",
+   JSON.stringify(records)
+ );
+
+ alert("Attendance Saved Successfully!");
+}
+
+dateInput.addEventListener("change", () => {
+
+ attendance = records[dateInput.value] || {};
+
+ showTable();
+
+});
+
+showTable();
+
 </script>
+
 </body>
 </html>
