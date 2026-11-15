@@ -1,0 +1,153 @@
+
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>School Attendance</title>
+<style>
+body {
+ font-family: Arial;
+ background:#edf4f1;
+ padding:15px;
+}
+header {
+ background:#075e45;
+ color:white;
+ text-align:center;
+ padding:20px;
+ border-radius:12px;
+}
+.card {
+ background:white;
+ padding:15px;
+ margin-top:15px;
+ border-radius:10px;
+}
+input {
+ padding:10px;
+ width:90%;
+ margin:7px 0;
+}
+button {
+ padding:10px;
+ border:0;
+ border-radius:6px;
+ color:white;
+ margin:4px;
+}
+.add {background:#075e45;}
+.yes {background:green;}
+.no {background:#d22;}
+.student {
+ padding:12px 0;
+ border-bottom:1px solid #ddd;
+}
+</style>
+</head>
+<body>
+
+<header>
+<h2>Rajshahi Cantonment</h2>
+<h3>Public School & College</h3>
+<p>Student Attendance System</p>
+</header>
+
+<div class="card">
+<h3>Attendance Date</h3>
+<input type="date" id="date">
+</div>
+
+<div class="card">
+<h3>Add Student</h3>
+<input id="name" placeholder="Student Name">
+<button class="add" onclick="addStudent()">Add Student</button>
+</div>
+
+<div class="card">
+<h3>Attendance Summary</h3>
+<p>Total: <span id="total">0</span></p>
+<p>Present: <span id="present">0</span></p>
+<p>Absent: <span id="absent">0</span></p>
+</div>
+
+<div class="card">
+<h3>Student List</h3>
+<div id="list"></div>
+<button class="add" onclick="save()">Save Attendance</button>
+</div>
+
+<script>
+let students=JSON.parse(localStorage.students||"[]");
+let records=JSON.parse(localStorage.records||"{}");
+let date=document.getElementById("date");
+
+date.value=new Date().toLocaleDateString("en-CA");
+let attendance=records[date.value]||{};
+
+function addStudent(){
+ let n=document.getElementById("name").value.trim();
+ if(!n)return alert("Enter student name");
+ students.push(n);
+ localStorage.students=JSON.stringify(students);
+ document.getElementById("name").value="";
+ show();
+}
+
+function mark(i,s){
+ attendance[i]=s;
+ show();
+}
+
+function show(){
+ let list=document.getElementById("list");
+ list.innerHTML="";
+ let p=0,a=0;
+
+ students.forEach((n,i)=>{
+ let s=attendance[i]||"Not marked";
+ if(s==="Present")p++;
+ if(s==="Absent")a++;
+
+ let div=document.createElement("div");
+ div.className="student";
+ let name=document.createElement("b");
+ name.textContent=(i+1)+". "+n+" — "+s;
+ div.appendChild(name);
+ div.appendChild(document.createElement("br"));
+
+ let b=document.createElement("button");
+ b.className="yes";
+ b.textContent="Present";
+ b.onclick=()=>mark(i,"Present");
+
+ let c=document.createElement("button");
+ c.className="no";
+ c.textContent="Absent";
+ c.onclick=()=>mark(i,"Absent");
+
+ div.appendChild(b);
+ div.appendChild(c);
+ list.appendChild(div);
+ });
+
+ document.getElementById("total").textContent=students.length;
+ document.getElementById("present").textContent=p;
+ document.getElementById("absent").textContent=a;
+}
+
+function save(){
+ records[date.value]=attendance;
+ localStorage.records=JSON.stringify(records);
+ alert("Attendance Saved!");
+}
+
+date.onchange=()=>{
+ attendance=records[date.value]||{};
+ show();
+};
+
+show();
+</script>
+</body>
+</html>
